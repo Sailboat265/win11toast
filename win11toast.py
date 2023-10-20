@@ -13,7 +13,7 @@ from winsdk.windows.ui.notifications import (
 DEFAULT_APP_ID = 'Python'
 
 xml = """
-<toast activationType="protocol" launch="http:">
+<toast activationType="protocol" launch="http:" useButtonStyle='true'>
     <visual>
         <binding template='ToastGeneric'></binding>
     </visual>
@@ -95,19 +95,27 @@ def create_actions(document):
     return actions
 
 
-def add_button(button, document):
-    if isinstance(button, str):
-        button = {
+def add_buttons(buttons:list, document):
+    for button in buttons:
+        content = button['content'] if button.get('content') else ""
+        imageUri = button['imageUri'] if button.get('imageUri') else ""
+        hint_btnStyle = button['hint-buttonStyle'] if button.get('hint-buttonStyle') else "Default"
+        hint_toolTip = button['hint-toolTip'] if button.get('hint-toolTip') else ""
+
+        btnPayload = {
             'activationType': 'protocol',
-            'arguments': 'http:' + button,
-            'content': button
+            'arguments': 'http:' + content,
+            'content': content,
+            'imageUri': imageUri,
+            'hint-buttonStyle': hint_btnStyle,
+            'hint-toolTip': hint_toolTip
         }
-    actions = document.select_single_node(
-        '//actions') or create_actions(document)
-    action = document.create_element('action')
-    for name, value in button.items():
-        action.set_attribute(name, value)
-    actions.append_child(action)
+        actions = document.select_single_node(
+            '//actions') or create_actions(document)
+        action = document.create_element('action')
+        for name, value in btnPayload.items():
+            action.set_attribute(name, value)
+        actions.append_child(action)
 
 
 def add_input(id, document):
@@ -243,7 +251,7 @@ def available_recognizer_languages():
     print('Add-WindowsCapability -Online -Name "Language.OCR~~~en-US~0.0.1.0"')
 
 
-def notify(title=None, body=None, on_click=print, icon=None, image=None, progress=None, audio=None, dialogue=None, duration=None, input=None, inputs=[], selection=None, selections=[], button=None, buttons=[], xml=xml, app_id=DEFAULT_APP_ID):
+def notify(title=None, body=None, on_click=print, icon=None, image=None, progress=None, audio=None, dialogue=None, duration=None, input=None, inputs=[], selection=None, selections=[], buttons:list=[], xml=xml, app_id=DEFAULT_APP_ID):
     document = XmlDocument()
     document.load_xml(xml)
 
@@ -267,11 +275,8 @@ def notify(title=None, body=None, on_click=print, icon=None, image=None, progres
     if selections:
         for selection in selections:
             add_selection(selection, document)
-    if button:
-        add_button(button, document)
     if buttons:
-        for button in buttons:
-            add_button(button, document)
+        add_buttons(buttons, document)
     if icon:
         add_icon(icon, document)
     if image:
@@ -307,7 +312,7 @@ def notify(title=None, body=None, on_click=print, icon=None, image=None, progres
     return notification
 
 
-async def toast_async(title=None, body=None, on_click=print, icon=None, image=None, progress=None, audio=None, dialogue=None, duration=None, input=None, inputs=[], selection=None, selections=[], button=None, buttons=[], xml=xml, app_id=DEFAULT_APP_ID, ocr=None, on_dismissed=print, on_failed=print):
+async def toast_async(title=None, body=None, on_click=print, icon=None, image=None, progress=None, audio=None, dialogue=None, duration=None, input=None, inputs=[], selection=None, selections=[], buttons=[], xml=xml, app_id=DEFAULT_APP_ID, ocr=None, on_dismissed=print, on_failed=print):
     """
     Notify
     Args:
@@ -333,7 +338,7 @@ async def toast_async(title=None, body=None, on_click=print, icon=None, image=No
         src = ocr if isinstance(ocr, str) else ocr['ocr']
         image = {'placement': 'hero', 'src': src}
     notification = notify(title, body, on_click, icon, image,
-                          progress, audio, dialogue, duration, input, inputs, selection, selections, button, buttons, xml, app_id)
+                          progress, audio, dialogue, duration, input, inputs, selection, selections, buttons, xml, app_id)
     loop = asyncio.get_running_loop()
     futures = []
 
